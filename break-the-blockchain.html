@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Break the Blockchain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mustard:#E8B53D; --mustard-soft:#F6E2AE; --maroon:#6A1B1A; --maroon-deep:#4A1110;
+  --cream:#FFFBF0; --paper:#FFFFFF; --ink:#2A1A14; --muted:#6D5A50; --line:#EAD9B0;
+  --green:#2F7D4F; --green-soft:#E1F1E7; --red:#B23A2E; --red-soft:#F9E1DD; --blue:#2E5E8C;
+  --serif:Georgia,'Times New Roman',serif; --sans:'Inter',system-ui,sans-serif; --mono:'Space Mono',monospace;
+  --r:14px; --shadow:0 6px 22px rgba(106,27,26,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden;overflow-wrap:break-word}
+body{background:var(--cream);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65}
+svg,iframe,video,img{max-width:100%}
+a{color:var(--maroon)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--serif);color:var(--maroon);line-height:1.2}
+h2{font-size:clamp(1.6rem,3.2vw,2.3rem);margin-bottom:.4rem}
+h3{font-size:1.25rem;margin-bottom:.5rem}
+p{margin-bottom:.9rem}
+.kicker{font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);opacity:.85}
+p,.hint,.msg,.think,.callout,.flip .b,.anchor p,.howto div,.steps div,.prompts li,.rule li{text-align:justify;text-justify:inter-word}
+
+/* HUD, toast, progress */
+.progress{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--mustard),#F2CC6B);z-index:70}
+.hud{position:fixed;top:12px;right:12px;z-index:50;background:var(--maroon);color:var(--cream);border-radius:999px;padding:8px 16px 8px 10px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.82rem}
+.hud .badge{background:var(--mustard);color:var(--maroon);font-weight:800;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-family:var(--serif);font-size:1rem}
+.hud .xp{font-family:var(--mono);font-weight:700}
+.hud .bar{width:70px;height:6px;background:rgba(255,255,255,.2);border-radius:9px;overflow:hidden}
+.hud .bar i{display:block;height:100%;width:0;background:var(--mustard);transition:width .5s}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:999px;font-size:.88rem;opacity:0;transition:all .35s;z-index:60;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.emb .hud,.emb .progress{position:absolute;transition:top .25s ease}
+.emb .toast{position:absolute;bottom:auto}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,var(--maroon) 0%,var(--maroon-deep) 100%);color:var(--cream);padding:clamp(48px,7vw,84px) 0 clamp(30px,5vw,48px);position:relative;overflow:hidden}
+.hero .wrap{text-align:center}
+.hero:after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(232,181,61,.12)}
+.logo{display:inline-grid;place-items:center;width:54px;height:54px;border-radius:14px;background:var(--mustard);color:var(--maroon);font-size:1.9rem;font-weight:700;margin-bottom:18px}
+.hero .kicker{color:var(--mustard);opacity:1}
+.hero h1{color:var(--cream);font-size:clamp(2.2rem,6vw,3.8rem);margin:.4rem 0 .6rem}
+.hero h1 span{color:var(--mustard)}
+.hero .sub{font-size:clamp(1rem,2vw,1.2rem);max-width:720px;margin:0 auto;opacity:.92;font-family:var(--serif);font-style:italic;text-align:center}
+.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px auto 0;max-width:760px;text-align:left}
+.howto div{background:rgba(255,255,255,.08);border:1px solid rgba(232,181,61,.35);border-radius:12px;padding:12px 14px;font-size:.88rem}
+.howto b{display:block;color:var(--mustard);font-family:var(--mono);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
+.meta{margin-top:18px;font-family:var(--mono);font-size:.78rem;opacity:.75}
+.herochain{max-width:860px;margin:26px auto 0}
+.herochain svg{width:100%;height:auto;overflow:visible}
+.hb{opacity:0;animation:hbIn .6s forwards}
+@keyframes hbIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hl{stroke-dasharray:60;stroke-dashoffset:60;animation:hl .5s forwards}
+@keyframes hl{to{stroke-dashoffset:0}}
+
+/* Map */
+.map{padding:34px 0 10px}
+.map svg{width:100%;height:auto;display:block;overflow:hidden}
+.map .node{cursor:pointer}
+
+/* Blocks */
+section.block{padding:46px 0;border-top:1px dashed var(--line)}
+.block-head{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+.num{flex:none;width:52px;height:52px;border-radius:14px;background:var(--mustard);color:var(--maroon);display:grid;place-items:center;font-family:var(--serif);font-size:1.5rem;font-weight:700}
+.lead{font-size:1.08rem;font-family:var(--serif);color:var(--muted);font-style:italic;margin:0}
+.story p{font-size:1.02rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.anchor{border-left:5px solid var(--mustard);background:#FFF8E6}
+.anchor .tag{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--maroon)}
+.anchor h4{font-family:var(--serif);color:var(--maroon);font-size:1.08rem;margin:.2rem 0 .4rem}
+.anchor p{margin:0;font-size:.93rem}
+.widget{background:var(--paper);border:2px solid var(--maroon);border-radius:18px;padding:22px;margin:22px 0;box-shadow:var(--shadow)}
+.widget-title{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.widget-title .pill{background:var(--maroon);color:var(--cream);font-family:var(--mono);font-size:.68rem;padding:3px 9px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase}
+.widget-title h3{margin:0}
+.hint{font-size:.88rem;color:var(--muted);margin-bottom:14px}
+.btn{font-family:var(--sans);font-weight:600;font-size:.9rem;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;transition:transform .15s,background .2s}
+.btn:active{transform:scale(.96)}
+.btn-m{background:var(--maroon);color:var(--cream)}
+.btn-y{background:var(--mustard);color:var(--maroon)}
+.btn-o{background:transparent;border:2px solid var(--maroon);color:var(--maroon)}
+.btn-g{background:var(--green);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.callout{background:var(--maroon);color:var(--cream);border-radius:var(--r);padding:16px 18px;margin:16px 0;font-family:var(--serif);font-size:1.02rem}
+.callout b{color:var(--mustard)}
+.think{background:#FFF3D6;border:1px dashed var(--mustard);border-radius:12px;padding:12px 16px;margin:14px 0;font-size:.95rem}
+.think:before{content:"Pause and think: ";font-weight:700;color:var(--maroon)}
+.msg{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:.92rem;background:#F3EDE0}
+.msg.bad{background:var(--red-soft);color:var(--red)}
+.msg.good{background:var(--green-soft);color:var(--green)}
+.scene{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px;margin:18px 0;box-shadow:var(--shadow);overflow:hidden}
+.scene svg{width:100%;height:auto;display:block}
+.cap{font-size:.84rem;color:var(--muted);text-align:center;margin:8px 0 0}
+.tapnote{font-family:var(--mono);font-size:.72rem;color:var(--maroon);text-align:center;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+
+/* Warm-up rules */
+.rule{background:var(--paper);border:2px dashed var(--mustard);border-radius:16px;padding:18px 20px}
+.rule ol{padding-left:20px}
+.rule li{margin:6px 0}
+.formula{font-family:var(--mono);background:var(--maroon);color:var(--mustard);border-radius:12px;padding:14px;text-align:center;font-size:1rem;margin:12px 0}
+.ledger-tpl{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
+.ledger-tpl th,.ledger-tpl td{border:1px solid var(--line);padding:8px;text-align:center}
+.ledger-tpl th{background:#FFF3D6;font-family:var(--mono);font-size:.72rem;color:var(--maroon);text-transform:uppercase}
+
+/* Hash playground */
+.hashin{width:100%;font-family:var(--mono);font-size:1rem;border:2px solid var(--line);border-radius:10px;padding:12px;background:var(--cream);color:var(--ink)}
+.hashout{font-family:var(--mono);font-size:.95rem;word-break:break-all;background:#1B1110;color:var(--mustard);border-radius:10px;padding:14px;margin-top:10px;min-height:3.4em}
+.hashout span{transition:color .3s}
+.hashout span.ch{color:#FF7B6B}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.presets button{font-family:var(--mono);font-size:.78rem;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.presets button:hover{border-color:var(--maroon)}
+.meter{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:.88rem;font-weight:600;color:var(--maroon)}
+.meter .mt{flex:1;height:10px;background:#EFE4CB;border-radius:9px;overflow:hidden}
+.meter .mt i{display:block;height:100%;width:0;background:var(--red);transition:width .5s}
+
+/* Blockchain simulator */
+.chainsim{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:stretch}
+.bk{flex:0 1 calc(25% - 11px);min-width:210px;border-radius:14px;padding:14px;border:3px solid var(--green);background:var(--green-soft);transition:background .35s,border-color .35s,transform .25s;position:relative}
+.bk.bad{border-color:var(--red);background:var(--red-soft)}
+.bk.mined{animation:pulse .6s}
+@keyframes pulse{50%{transform:scale(1.04)}}
+.bk h4{font-family:var(--serif);color:var(--maroon);font-size:1.05rem;display:flex;justify-content:space-between;align-items:center}
+.bk h4 .st{font-family:var(--mono);font-size:.68rem;padding:2px 8px;border-radius:999px;background:var(--green);color:#fff}
+.bk.bad h4 .st{background:var(--red)}
+.bk label{display:block;font-family:var(--mono);font-size:.64rem;text-transform:uppercase;color:var(--muted);margin-top:8px;letter-spacing:.05em}
+.bk textarea{width:100%;font-family:var(--sans);font-size:.88rem;border:1.5px solid rgba(0,0,0,.12);border-radius:8px;padding:7px;resize:vertical;min-height:52px;background:#fff;color:var(--ink)}
+.bk .hx{font-family:var(--mono);font-size:.7rem;word-break:break-all;background:rgba(255,255,255,.7);border-radius:6px;padding:5px 6px;color:var(--ink)}
+.bk .hx b{color:var(--green)}
+.bk.bad .hx.own b{color:var(--red)}
+.bk .nonce{font-family:var(--mono);font-size:.82rem;color:var(--ink)}
+.bk .btn{width:100%;margin-top:10px;padding:8px}
+.simstats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.simstats div{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:.85rem}
+.simstats b{font-family:var(--mono);color:var(--maroon)}
+
+/* Network */
+.net{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.nd{flex:0 1 calc(20% - 10px);min-width:170px;border:3px solid var(--line);border-radius:14px;padding:12px;background:var(--paper);transition:all .35s;cursor:pointer;position:relative}
+.nd h5{font-family:var(--serif);color:var(--maroon);font-size:1rem;display:flex;align-items:center;gap:6px}
+.nd h5 i{width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block}
+.nd ul{list-style:none;font-size:.78rem;margin:8px 0}
+.nd li{padding:3px 0;border-bottom:1px dashed var(--line)}
+.nd li.tamp{color:var(--red);font-weight:700}
+.nd .fp{font-family:var(--mono);font-size:.72rem;background:var(--cream);border-radius:6px;padding:4px 6px;text-align:center}
+.nd.evil{border-color:var(--red)}
+.nd.evil h5 i{background:var(--red)}
+.nd.win{border-color:var(--green);box-shadow:0 0 0 4px rgba(47,125,79,.2)}
+.nd.lose{opacity:.55;transform:scale(.97)}
+.attack{max-width:520px;margin:16px auto 0}
+.attack label{display:flex;justify-content:space-between;font-size:.88rem;font-weight:600}
+.attack label span{font-family:var(--mono);color:var(--maroon)}
+input[type=range]{width:100%;accent-color:var(--maroon)}
+
+/* Flip cards */
+.flips{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.flip{flex:0 1 calc(25% - 9px);min-width:200px;perspective:900px;cursor:pointer;min-height:170px}
+.flip-in{position:relative;width:100%;height:100%;min-height:170px;transition:transform .6s;transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:center}
+.flip .f{background:var(--maroon);color:var(--cream)}
+.flip .f b{font-family:var(--serif);font-size:1.2rem;color:var(--mustard)}
+.flip .f small{font-family:var(--mono);font-size:.68rem;opacity:.7;margin-top:6px}
+.flip .b{background:var(--paper);border:2px solid var(--mustard);transform:rotateY(180deg);font-size:.86rem;overflow:auto}
+.flip .b em{display:block;margin-top:6px;color:var(--maroon);font-size:.8rem}
+
+/* Sorter */
+.sortq{font-family:var(--serif);font-size:1.15rem;color:var(--ink);text-align:center;background:var(--cream);border-radius:12px;padding:16px;min-height:72px;display:grid;place-items:center}
+.sortbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.sortbtns .btn{padding:12px 8px}
+.sortfb{text-align:center;font-size:.9rem;margin-top:10px;min-height:1.4em}
+
+/* Halving bars */
+.halving{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:220px;padding-top:10px}
+.hv{width:min(90px,15%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.hv .bar{width:100%;background:linear-gradient(var(--mustard),#C9952A);border-radius:8px 8px 0 0;height:0;transition:height 1s cubic-bezier(.3,1.2,.5,1)}
+.hv .v{font-family:var(--mono);font-size:.8rem;font-weight:700;color:var(--maroon);margin-bottom:4px}
+.hv .y{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:6px}
+
+/* Likert */
+.lk{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+.lk .opts{display:flex;gap:4px}
+.lk .opts button{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--paper);font-family:var(--mono);font-weight:700;cursor:pointer;color:var(--ink)}
+.lk .opts button.on{background:var(--maroon);color:var(--cream);border-color:var(--maroon)}
+.lkscale{display:flex;justify-content:flex-end;gap:14px;font-family:var(--mono);font-size:.66rem;color:var(--muted);text-transform:uppercase}
+.report{display:none;margin-top:16px;background:var(--cream);border:2px solid var(--mustard);border-radius:14px;padding:18px}
+.report.show{display:block}
+.lens{font-family:var(--serif);font-size:1.3rem;color:var(--maroon);margin:4px 0 8px}
+.rbar{margin:8px 0}
+.rbar .rl{display:flex;justify-content:space-between;font-size:.82rem;font-weight:600}
+.rbar .rt{height:10px;background:#EFE4CB;border-radius:9px;overflow:hidden}
+.rbar .rt i{display:block;height:100%;width:0;background:var(--maroon);border-radius:9px;transition:width 1s ease}
+
+/* Quiz */
+.q{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#FFFDF7}
+.q p{font-weight:600;margin-bottom:8px;text-align:left}
+.q .opts{display:grid;gap:6px}
+.q .opts button{text-align:left;background:var(--paper);border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-family:var(--sans);font-size:.9rem;cursor:pointer;color:var(--ink)}
+.q .opts button:hover{border-color:var(--maroon)}
+.q .opts button.right{background:var(--green-soft);border-color:var(--green)}
+.q .opts button.wrong{background:var(--red-soft);border-color:var(--red)}
+.q .why{display:none;font-size:.86rem;margin-top:8px;color:var(--muted)}
+.q.done .why{display:block}
+.score{font-family:var(--mono);font-weight:700;color:var(--maroon)}
+
+/* Search card */
+.searchbox{background:var(--cream);border:2px dashed var(--mustard);border-radius:14px;padding:16px}
+.sb-label{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--maroon);margin-bottom:8px}
+.sb-row{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 16px;margin-bottom:8px}
+.sb-row code{flex:1;font-family:var(--mono);font-size:.92rem;color:var(--ink);overflow-wrap:anywhere}
+.sb-row .btn{border-radius:999px;padding:8px 14px}
+
+/* Blind Spot */
+.blindspot{background:linear-gradient(135deg,var(--maroon),var(--maroon-deep));color:var(--cream);border-radius:22px;padding:clamp(20px,4vw,36px);margin:20px 0}
+.blindspot h2,.blindspot h3,.blindspot .kicker{color:var(--mustard)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.steps div{background:rgba(255,255,255,.08);border:1px solid rgba(232,181,61,.3);border-radius:12px;padding:12px;font-size:.85rem}
+.steps b{display:block;font-family:var(--mono);color:var(--mustard);font-size:.72rem;letter-spacing:.08em}
+.roles{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:16px 0}
+.role{flex:0 1 calc(25% - 9px);min-width:220px;background:var(--cream);color:var(--ink);border-radius:14px;padding:16px;border:3px solid transparent;transition:border .2s,transform .2s,box-shadow .2s}
+.role.pick{border-color:var(--mustard);transform:translateY(-4px) scale(1.02);box-shadow:0 0 0 4px rgba(232,181,61,.35)}
+.role .rn{font-family:var(--mono);font-size:.7rem;color:var(--maroon)}
+.role h4{font-family:var(--serif);color:var(--maroon);font-size:1.1rem;margin:2px 0 6px}
+.role p{font-size:.84rem;margin-bottom:6px;text-align:left}
+.role .inc{font-size:.82rem;background:#FFF3D6;border-radius:8px;padding:6px 8px}
+.draw-result{margin-top:12px;font-family:var(--serif);font-size:1.25rem;color:var(--mustard);min-height:1.6em}
+.prompts{background:rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;margin:12px 0}
+.prompts ol,.prompts ul{padding-left:20px}
+.prompts li{margin:6px 0}
+.timer{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0}
+.timer .clock{font-family:var(--mono);font-size:2.4rem;font-weight:700;color:var(--mustard);min-width:130px}
+.submit{background:var(--cream);color:var(--ink);border-radius:14px;padding:18px;margin-top:16px}
+.submit h3{color:var(--maroon)}
+.submit textarea{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-family:var(--sans);font-size:.9rem;margin:8px 0;resize:vertical}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--paper);cursor:pointer}
+.check input{margin-top:5px;accent-color:var(--maroon);width:18px;height:18px}
+
+footer{background:var(--maroon-deep);color:var(--cream);padding:34px 0;margin-top:40px;text-align:center}
+footer .sig{font-family:var(--serif);font-size:1.3rem;color:var(--mustard);font-style:italic}
+footer small{display:block;opacity:.7;margin-top:6px;font-size:.8rem}
+.sources{font-size:.78rem;color:var(--muted);margin-top:14px}
+
+/* scroll reveals */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.rv-s{transform:translateY(18px) scale(.96)}
+.rv.in{opacity:1;transform:none}
+.rv-num{transform:scale(0) rotate(-180deg);transition:transform .8s cubic-bezier(.3,1.6,.5,1)}
+.rv-num.in{transform:none}
+
+@media (max-width:820px){
+  .grid2{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .howto{grid-template-columns:1fr}
+  .bk{flex-basis:calc(50% - 7px)}
+}
+@media (max-width:540px){
+  .grid3,.steps,.sortbtns{grid-template-columns:1fr}
+  .hud .bar{display:none}
+  .bk,.nd,.flip,.role{flex-basis:100%;min-width:0}
+  .flip,.flip-in{min-height:200px}
+  .num{width:42px;height:42px;font-size:1.2rem}
+  .lk{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="hud" aria-live="polite">
+  <div class="badge">द</div>
+  <div><div class="xp"><span id="xp">0</span> Insight Points</div><div id="rank">Intern</div></div>
+  <div class="bar"><i id="xpbar"></i></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo">द</div>
+    <div class="kicker">Fintech &amp; AI Applications in Commerce · MCO501-4 · Unit 1 · Read 02</div>
+    <h1>Break the <span>Blockchain</span></h1>
+    <p class="sub">A notebook that thousands of strangers keep together, that nobody owns, and that nobody can secretly rewrite. Try to cheat it. You will fail, and that is the lesson.</p>
+    <div class="howto">
+      <div><b>01 · Read</b>Five short chapters, from a simple ledger to the birth of a coin.</div>
+      <div><b>02 · Break</b>Change a block, fake a hash, attack a network. Watch what the system does.</div>
+      <div><b>03 · Discuss</b>The Blind Spot: should India put land records on a blockchain?</div>
+    </div>
+    <div class="meta">Approx. 45 minutes · Earn Insight Points · Start as an Intern, finish as a CEO</div>
+    <div class="herochain" aria-hidden="true">
+      <svg viewBox="0 0 860 120">
+        <g font-family="Space Mono" font-size="11">
+          <g class="hb" style="animation-delay:.2s"><rect x="10" y="20" width="150" height="80" rx="12" fill="rgba(255,251,240,.08)" stroke="#E8B53D" stroke-width="2"/><text x="85" y="48" text-anchor="middle" fill="#E8B53D" font-weight="700">BLOCK 1</text><text x="85" y="70" text-anchor="middle" fill="#FFFBF0">hash 000a7f...</text></g>
+          <line class="hl" x1="160" y1="60" x2="230" y2="60" stroke="#E8B53D" stroke-width="4" style="animation-delay:.7s"/>
+          <g class="hb" style="animation-delay:.9s"><rect x="230" y="20" width="150" height="80" rx="12" fill="rgba(255,251,240,.08)" stroke="#E8B53D" stroke-width="2"/><text x="305" y="48" text-anchor="middle" fill="#E8B53D" font-weight="700">BLOCK 2</text><text x="305" y="70" text-anchor="middle" fill="#FFFBF0">prev 000a7f...</text></g>
+          <line class="hl" x1="380" y1="60" x2="450" y2="60" stroke="#E8B53D" stroke-width="4" style="animation-delay:1.4s"/>
+          <g class="hb" style="animation-delay:1.6s"><rect x="450" y="20" width="150" height="80" rx="12" fill="rgba(255,251,240,.08)" stroke="#E8B53D" stroke-width="2"/><text x="525" y="48" text-anchor="middle" fill="#E8B53D" font-weight="700">BLOCK 3</text><text x="525" y="70" text-anchor="middle" fill="#FFFBF0">prev 0004c2...</text></g>
+          <line class="hl" x1="600" y1="60" x2="670" y2="60" stroke="#E8B53D" stroke-width="4" style="animation-delay:2.1s"/>
+          <g class="hb" style="animation-delay:2.3s"><rect x="670" y="20" width="180" height="80" rx="12" fill="rgba(255,123,107,.12)" stroke="#FF7B6B" stroke-width="2" stroke-dasharray="6 4"/><text x="760" y="48" text-anchor="middle" fill="#FF7B6B" font-weight="700">YOUR TURN</text><text x="760" y="70" text-anchor="middle" fill="#FFFBF0">try to break it</text></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<div class="wrap map">
+  <div class="kicker" style="margin-bottom:8px">Your learning map · tap a stop to jump</div>
+  <svg viewBox="-20 0 1040 150" role="img" aria-label="Learning map">
+    <path d="M30 75 C 140 10, 220 140, 330 75 S 520 10, 640 75 S 860 140, 980 75" fill="none" stroke="#E8B53D" stroke-width="4" stroke-dasharray="8 8"/>
+    <g class="node" data-go="b0"><circle cx="30" cy="75" r="24" fill="#E8B53D"/><text x="30" y="81" text-anchor="middle" fill="#6A1B1A" font-family="Georgia" font-size="16" font-weight="700">0</text><text x="30" y="125" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">Warm-up</text></g>
+    <g class="node" data-go="b1"><circle cx="185" cy="62" r="24" fill="#6A1B1A"/><text x="185" y="68" text-anchor="middle" fill="#FFFBF0" font-family="Georgia" font-size="16">1</text><text x="185" y="112" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">The Ledger</text></g>
+    <g class="node" data-go="b2"><circle cx="330" cy="75" r="24" fill="#6A1B1A"/><text x="330" y="81" text-anchor="middle" fill="#FFFBF0" font-family="Georgia" font-size="16">2</text><text x="330" y="125" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">Fingerprints</text></g>
+    <g class="node" data-go="b3"><circle cx="490" cy="50" r="24" fill="#6A1B1A"/><text x="490" y="56" text-anchor="middle" fill="#FFFBF0" font-family="Georgia" font-size="16">3</text><text x="490" y="100" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">The Chain</text></g>
+    <g class="node" data-go="b4"><circle cx="640" cy="75" r="24" fill="#6A1B1A"/><text x="640" y="81" text-anchor="middle" fill="#FFFBF0" font-family="Georgia" font-size="16">4</text><text x="640" y="125" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">The Network</text></g>
+    <g class="node" data-go="b5"><circle cx="810" cy="98" r="24" fill="#6A1B1A"/><text x="810" y="104" text-anchor="middle" fill="#FFFBF0" font-family="Georgia" font-size="16">5</text><text x="810" y="146" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="600">Birth of a Coin</text></g>
+    <g class="node" data-go="blind"><circle cx="975" cy="75" r="28" fill="#E8B53D"/><text x="975" y="81" text-anchor="middle" fill="#6A1B1A" font-family="Georgia" font-size="20" font-weight="700">★</text><text x="955" y="128" text-anchor="middle" fill="#6A1B1A" font-family="Inter" font-size="13" font-weight="700">The Blind Spot</text></g>
+  </svg>
+</div>
+
+<main class="wrap">
+
+<!-- WARM-UP -->
+<section class="block" id="b0">
+  <div class="block-head"><div class="num">0</div><div><div class="kicker">Before the screens · 15 minutes</div><h2>Warm-up: The Human Blockchain</h2><p class="lead">You are about to become a blockchain. Notebooks out.</p></div></div>
+  <div class="grid2">
+    <div class="rule">
+      <h3>How it works</h3>
+      <ol>
+        <li>The class splits into <b>6 nodes</b>. Each node picks one <b>ledger keeper</b>.</li>
+        <li>Each ledger keeper gets a folded chit from Dinesh Sir. Do not show it to anyone.</li>
+        <li>Sir reads out transactions in blocks of three. Every node writes them in its own notebook.</li>
+        <li>After each block, your node calculates the block's <b>fingerprint</b> using the rule.</li>
+        <li>At the end, every node calls out its fingerprints. Watch what happens.</li>
+      </ol>
+    </div>
+    <div class="rule">
+      <h3>The fingerprint rule</h3>
+      <div class="formula">Fingerprint = (previous fingerprint + this block's total)<br>keep only the last two digits</div>
+      <p class="hint" style="margin:0">The first block starts from <b>00</b>. Example: previous fingerprint 65, this block's total 75. 65 + 75 = 140, so the fingerprint is <b>40</b>.</p>
+      <table class="ledger-tpl">
+        <tr><th>Block</th><th>Transactions</th><th>Total</th><th>Fingerprint</th></tr>
+        <tr><td>1</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>2</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        <tr><td>3</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="think">Once the class has found the cheater: why did changing one old entry change every fingerprint after it? Keep your answer. The rest of this page shows you a real blockchain doing exactly the same thing.</div>
+</section>
+
+<!-- BLOCK 1 -->
+<section class="block" id="b1">
+  <div class="block-head"><div class="num">1</div><div><div class="kicker">Who keeps the record?</div><h2>The Ledger</h2><p class="lead">All of finance is a notebook of who owes whom.</p></div></div>
+  <div class="story">
+    <p>A <b>ledger</b> is simply a record of transactions. Your bank passbook is a ledger. The Kirana shop's credit notebook is a ledger. When you pay ₹500 by UPI, nothing physical moves. Two ledgers change: your bank reduces your balance and your friend's bank increases theirs.</p>
+    <p>Today, almost every ledger is <b>centralised</b>. One institution keeps the master copy, and everyone trusts it. That works well, until the keeper makes a mistake, gets hacked, goes offline, or quietly changes an entry. In 2008, you saw what happens when trust in the record keepers breaks.</p>
+    <p>A <b>distributed ledger</b> takes a different approach. Instead of one master copy, <b>many computers keep identical copies</b> and agree on every change together. No single keeper, no single point of failure.</p>
+  </div>
+  <div class="scene">
+    <div class="tapnote">Attack the centre and see who survives</div>
+    <svg id="netsvg" viewBox="0 0 840 280" role="img" aria-label="Centralised versus distributed network"></svg>
+    <div class="btnrow"><button class="btn btn-m" id="attackCentre">Attack the central server</button><button class="btn btn-o" id="resetNet">Reset</button></div>
+    <p class="cap" id="netcap">Left: one bank keeps the only master copy. Right: every computer keeps a full copy.</p>
+  </div>
+  <div class="grid3">
+    <div class="card anchor"><div class="tag">Key term</div><h4>Ledger</h4><p>A record of transactions: who paid whom, how much, and when. Banking is built on ledgers.</p></div>
+    <div class="card anchor"><div class="tag">Key term</div><h4>Distributed Ledger Technology (DLT)</h4><p>A ledger copied across many computers, called <b>nodes</b>, that agree on every update using shared rules instead of a central keeper.</p></div>
+    <div class="card anchor"><div class="tag">Key term</div><h4>Blockchain</h4><p>One type of DLT, where transactions are grouped into <b>blocks</b> and each block is locked to the one before it, forming a chain.</p></div>
+  </div>
+  <div class="think">Every blockchain is a distributed ledger, but not every distributed ledger is a blockchain. Can you guess why? (Hint: the word "chain".)</div>
+</section>
+
+<!-- BLOCK 2 -->
+<section class="block" id="b2">
+  <div class="block-head"><div class="num">2</div><div><div class="kicker">The magic ingredient</div><h2>Digital Fingerprints</h2><p class="lead">How do you prove a record was never touched? Give it a fingerprint.</p></div></div>
+  <div class="story">
+    <p>In the warm-up, your fingerprint rule was simple addition. Real blockchains use a <b>cryptographic hash function</b>, most famously <b>SHA-256</b>, used by Bitcoin. Feed it any text, a single word or a whole book, and it returns a fingerprint of exactly 64 characters.</p>
+    <p>Three properties make it powerful: the same input always gives the same fingerprint; changing even one character gives a completely different fingerprint; and you cannot work backwards from the fingerprint to the original text. Try it below. This is a real SHA-256, running in your browser.</p>
+  </div>
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Try it</span><h3>The hash machine</h3></div>
+    <p class="hint">Type anything. Then change just one character and watch how much of the fingerprint changes. Red characters are the ones that changed from the previous fingerprint.</p>
+    <input class="hashin" id="hashIn" value="Asha pays Ravi ₹100" aria-label="Text to hash">
+    <div class="presets">
+      <button data-p="Asha pays Ravi ₹100">Asha pays Ravi ₹100</button>
+      <button data-p="Asha pays Ravi ₹1000">Asha pays Ravi ₹1000</button>
+      <button data-p="asha pays Ravi ₹100">asha pays Ravi ₹100</button>
+      <button data-p="Asha pays Ravi ₹100.">Add a full stop</button>
+    </div>
+    <div class="hashout" id="hashOut"></div>
+    <div class="meter"><span>Characters changed</span><div class="mt"><i id="chgBar"></i></div><span id="chgN">0 / 64</span></div>
+  </div>
+  <div class="flips" id="hashFlips"></div>
+</section>
+
+<!-- BLOCK 3 -->
+<section class="block" id="b3">
+  <div class="block-head"><div class="num">3</div><div><div class="kicker">The main event</div><h2>The Chain: Try to Cheat It</h2><p class="lead">Each block carries the fingerprint of the block before it. Change one, and the chain snaps.</p></div></div>
+  <div class="story">
+    <p>A block contains three things: some <b>transactions</b>, the <b>fingerprint of the previous block</b>, and a number called the <b>nonce</b>. The block's own fingerprint is calculated from all three. Because every block includes the previous block's fingerprint, the blocks are chained together. Touch an old block, and its fingerprint changes, which breaks the link to the next block, and the next, and the next.</p>
+    <p>To make cheating even harder, a block is only valid if its fingerprint starts with a few zeros, here <b>"000"</b>. Finding a nonce that produces such a fingerprint takes thousands of guesses. This guessing work is called <b>mining</b>, or <b>Proof of Work</b>.</p>
+  </div>
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Break it</span><h3>The blockchain simulator</h3></div>
+    <p class="hint"><b>Mission 1:</b> Change the amount in Block 2 from ₹500 to ₹5000. <b>Mission 2:</b> Make the whole chain green again by pressing Mine on every red block. Count how many guesses that takes.</p>
+    <div class="chainsim" id="chainsim"></div>
+    <div class="simstats"><div>Total guesses you needed: <b id="guesses">0</b></div><div>Blocks currently broken: <b id="brokenN">0</b></div></div>
+    <div class="msg" id="simMsg">All four blocks are valid. Every fingerprint starts with 000 and every block points correctly to the one before it.</div>
+  </div>
+  <div class="callout">You just re-mined 3 blocks on one laptop. The real Bitcoin chain has <b>over 900,000 blocks</b>, and each one needs a <b>trillions of times harder</b> puzzle. To rewrite one old payment, you would have to redo all the work after it, faster than the rest of the world adds new blocks. That is why nobody does it.</div>
+</section>
+
+<!-- BLOCK 4 -->
+<section class="block" id="b4">
+  <div class="block-head"><div class="num">4</div><div><div class="kicker">Many copies, one truth</div><h2>The Network</h2><p class="lead">Even if you could re-mine every block, you would still have to fool everyone else.</p></div></div>
+  <div class="story">
+    <p>Your re-mined chain lives only on your computer. Thousands of other nodes still hold the honest copy. When nodes disagree, they follow a <b>consensus mechanism</b>: shared rules for deciding which version is true. In simple terms, <b>the majority wins</b>. A cheater with one copy is simply outvoted and corrected.</p>
+  </div>
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Attack it</span><h3>Five cities, one ledger</h3></div>
+    <p class="hint">Five nodes across India hold copies of the same ledger. Use the slider to choose how many nodes the attacker controls. The attacker changes "Ravi pays Meena ₹15" to "₹85". Then run the vote.</p>
+    <div class="net" id="net"></div>
+    <div class="attack">
+      <label>Nodes controlled by the attacker <span id="atkV">1 of 5</span></label>
+      <input type="range" id="atk" min="0" max="5" step="1" value="1">
+    </div>
+    <div class="btnrow"><button class="btn btn-m" id="vote">Run the consensus vote</button></div>
+    <div class="msg" id="voteMsg">Set the attacker's strength, then run the vote.</div>
+  </div>
+  <div class="grid2">
+    <div class="card anchor"><div class="tag">Consensus 1</div><h4>Proof of Work (PoW)</h4><p>Nodes called miners compete to solve the "000" puzzle you saw. The winner adds the next block and earns a reward. Secure, but uses a lot of electricity. Used by Bitcoin.</p></div>
+    <div class="card anchor"><div class="tag">Consensus 2</div><h4>Proof of Stake (PoS)</h4><p>Instead of burning electricity, validators lock up ("stake") their own coins as a security deposit. Cheat, and you lose your deposit. Ethereum switched from PoW to PoS in September 2022.</p></div>
+  </div>
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Sort it</span><h3>Public, private or permissioned?</h3></div>
+    <p class="hint">Not every blockchain is open to everyone. Read each situation and choose the right type.</p>
+    <div class="grid3" style="margin-bottom:12px">
+      <div class="card anchor"><div class="tag">Type 1</div><h4>Public</h4><p>Anyone can join, read and validate. No owner. Example: Bitcoin, Ethereum.</p></div>
+      <div class="card anchor"><div class="tag">Type 2</div><h4>Private</h4><p>One organisation controls who can join. Fast, but trust returns to that organisation.</p></div>
+      <div class="card anchor"><div class="tag">Type 3</div><h4>Permissioned / consortium</h4><p>A group of known organisations, such as several banks, run the nodes together. Example platform: Hyperledger Fabric.</p></div>
+    </div>
+    <div class="sortq" id="sortQ"></div>
+    <div class="sortbtns"><button class="btn btn-o" data-s="0">Public</button><button class="btn btn-o" data-s="1">Private</button><button class="btn btn-o" data-s="2">Permissioned</button></div>
+    <div class="sortfb" id="sortFb"></div>
+  </div>
+</section>
+
+<!-- BLOCK 5 -->
+<section class="block" id="b5">
+  <div class="block-head"><div class="num">5</div><div><div class="kicker">From chain to coin</div><h2>The Birth of a Coin</h2><p class="lead">Why would strangers spend electricity guarding a ledger? Because the ledger pays them.</p></div></div>
+  <div class="story">
+    <p>Mining costs real money: computers and electricity. So Bitcoin pays the miner who adds each new block with <b>newly created bitcoin</b>, called the <b>block reward</b>, plus the fees in that block. That is how every bitcoin in existence was born: not printed by a central bank, but issued by the code as payment for securing the ledger.</p>
+    <p>The code also limits supply. The block reward started at 50 bitcoin in 2009 and is cut in half roughly every four years, an event called the <b>halving</b>. Total supply can never exceed <b>21 million</b>. Compare that with the rupee, whose supply the RBI manages according to the needs of the economy.</p>
+  </div>
+  <div class="scene" id="halvScene">
+    <div class="tapnote">Bitcoin's block reward, halving by halving</div>
+    <div class="halving" id="halving"></div>
+    <p class="cap">Block reward in bitcoin per block. The current reward of <b>3.125</b> dates from the April 2024 halving.</p>
+  </div>
+  <div class="think">So the coin exists to pay for the blockchain, and the blockchain exists to record the coin. In the next class we will meet thousands of other coins and tokens that are built on top of blockchains. Ask yourself: what is each one paying for?</div>
+
+  <div class="card">
+    <div class="kicker">Watch · optional</div>
+    <h3 style="margin-top:4px">See it explained in five minutes</h3>
+    <p class="hint">Search YouTube for either of these and pick a video from the channel named.</p>
+    <div class="searchbox">
+      <div class="sb-label">Copy into YouTube</div>
+      <div class="sb-row"><span>🔎</span><code id="st1">Anders Brownworth blockchain demo</code><button class="btn btn-m" data-copy="st1">Copy</button></div>
+      <div class="sb-row"><span>🔎</span><code id="st2">How does a blockchain work Simply Explained</code><button class="btn btn-m" data-copy="st2">Copy</button></div>
+    </div>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Self-assessment</span><h3>Who do you trust with your money?</h3></div>
+    <p class="hint">Rate each statement from 1 (strongly disagree) to 5 (strongly agree). Then generate your trust profile.</p>
+    <div class="lkscale"><span>1 Disagree</span><span>5 Agree</span></div>
+    <div id="likert"></div>
+    <div class="btnrow"><button class="btn btn-m" id="trustBtn">Generate my trust profile</button></div>
+    <div class="report" id="trustReport"></div>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Glossary deck</span><h3>Ten words for today</h3></div>
+    <p class="hint">Say the meaning aloud before you flip.</p>
+    <div class="flips" id="gloss"></div>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Exit check</span><h3>Eight questions before The Blind Spot</h3></div>
+    <p class="hint">One attempt per question. Read the explanation either way.</p>
+    <div id="quiz"></div>
+    <div class="score" id="qscore">Score: 0 / 8</div>
+  </div>
+</section>
+
+<!-- BLIND SPOT -->
+<section id="blind">
+  <div class="blindspot">
+    <div class="kicker">Group activity · 25 minutes</div>
+    <h2>The Blind Spot: Land Records on a Blockchain?</h2>
+    <p>Land disputes are among the most common cases in Indian courts. Records are often paper-based, scattered across offices, and open to forgery. Several governments, in India and abroad, have explored putting land records on a blockchain. Your group plays one player in this decision. Find what a blockchain would fix, and what it could never fix.</p>
+    <div class="steps">
+      <div><b>STEP 1 · 2 MIN</b>Stay in your warm-up nodes. Choose a spokesperson and a scribe.</div>
+      <div><b>STEP 2 · 2 MIN</b>Tap "Draw our role" once. Read your role card together.</div>
+      <div><b>STEP 3 · 15 MIN</b>Discuss the three questions. The scribe types your answers below.</div>
+      <div><b>STEP 4 · 60 SEC</b>Spokesperson pitches your answers. Then submit.</div>
+    </div>
+    <div class="timer">
+      <div class="clock" id="clock">15:00</div>
+      <button class="btn btn-y" id="tStart">Start timer</button>
+      <button class="btn btn-o" id="tReset" style="color:var(--cream);border-color:var(--cream)">Reset</button>
+    </div>
+    <button class="btn btn-y" id="draw">Draw our role</button>
+    <div class="draw-result" id="drawResult" aria-live="polite"></div>
+    <div class="roles" id="roles"></div>
+    <div class="prompts">
+      <h3>Your three questions</h3>
+      <ol>
+        <li><b>Gain or lose:</b> What does your player gain, and what do they lose, if land records move to a blockchain?</li>
+        <li><b>The blind spot:</b> A blockchain guarantees that a record is never changed. But what if the record was wrong when it was first entered? Who checks the truth before it goes on the chain?</li>
+        <li><b>Your design:</b> Public, private or permissioned? Who should run the nodes, and why?</li>
+      </ol>
+    </div>
+    <div class="submit">
+      <h3>Submit your group's answers</h3>
+      <p class="hint">Scribe: draft here, copy, and paste into the submission form. Include your role and all member names.</p>
+      <textarea id="draft" placeholder="Node no. · Role · Members&#10;Q1:&#10;Q2:&#10;Q3:"></textarea>
+      <div class="btnrow" style="justify-content:flex-start">
+        <button class="btn btn-o" id="copyDraft">Copy our answers</button>
+        <button class="btn btn-m" id="submitBtn">Open submission form</button>
+      </div>
+    </div>
+    <div class="prompts" style="margin-top:16px">
+      <h3>Whole-class debrief</h3>
+      <ul>
+        <li>Which roles wanted the blockchain most, and which feared it? Why?</li>
+        <li>"Garbage in, garbage forever." Is a permanent wrong record worse than an editable one?</li>
+        <li>In the human blockchain, the majority decided the truth. In land records, should the majority decide who owns a farm?</li>
+        <li>Bridge to next class: if a blockchain can hold land, can it hold money, shares and gold? That is what tokens do.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="widget">
+    <div class="widget-title"><span class="pill">Before you leave</span><h3>Can you say this in your own words?</h3></div>
+    <div id="checks"></div>
+  </div>
+  <p class="sources">Hash function: SHA-256 as specified in FIPS 180-4, implemented in this page. Bitcoin supply and halving schedule: Bitcoin protocol (bitcoin.org). Ethereum's move to Proof of Stake: ethereum.org, "The Merge", September 2022. Bitcoin block height is approximate as of 2026.</p>
+</section>
+</main>
+
+<footer>
+  <div class="sig">With love, Dinesh Sir</div>
+  <small>Be inspired and keep inspiring.</small>
+  <small>Learn with Dinesh Sir · Fintech &amp; AI Applications in Commerce</small>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
+<script>
+/* ====== EDIT THIS: paste your Google Form link for Read 02 ====== */
+const SUBMIT_URL = "PASTE_YOUR_GOOGLE_FORM_LINK_HERE";
+
+const $ = id => document.getElementById(id);
+
+/* ====== SHA-256 (FIPS 180-4) ====== */
+const K=[],H0=[];(function(){let n=2,c=0;const isP=x=>{for(let i=2;i*i<=x;i++)if(x%i===0)return false;return true};while(c<64){if(isP(n)){if(c<8)H0.push((Math.pow(n,1/2)%1)*4294967296|0);K.push((Math.pow(n,1/3)%1)*4294967296|0);c++}n++}})();
+const TE=new TextEncoder();
+function sha256(str){
+  const bytes=TE.encode(str),l=bytes.length,padLen=((l+9+63)>>6)<<6;
+  const m=new Uint8Array(padLen);m.set(bytes);m[l]=0x80;
+  const dv=new DataView(m.buffer);dv.setUint32(padLen-4,(l*8)>>>0);dv.setUint32(padLen-8,Math.floor(l*8/4294967296));
+  let h=H0.slice();const w=new Int32Array(64);
+  for(let i=0;i<padLen;i+=64){
+    for(let t=0;t<16;t++)w[t]=dv.getInt32(i+t*4);
+    for(let t=16;t<64;t++){const a=w[t-15],b=w[t-2];const s0=((a>>>7)|(a<<25))^((a>>>18)|(a<<14))^(a>>>3);const s1=((b>>>17)|(b<<15))^((b>>>19)|(b<<13))^(b>>>10);w[t]=(w[t-16]+s0+w[t-7]+s1)|0}
+    let A=h[0],B=h[1],C=h[2],D=h[3],E=h[4],F=h[5],G=h[6],Hh=h[7];
+    for(let t=0;t<64;t++){const S1=((E>>>6)|(E<<26))^((E>>>11)|(E<<21))^((E>>>25)|(E<<7));const ch=(E&F)^(~E&G);const t1=(Hh+S1+ch+K[t]+w[t])|0;const S0=((A>>>2)|(A<<30))^((A>>>13)|(A<<19))^((A>>>22)|(A<<10));const mj=(A&B)^(A&C)^(B&C);const t2=(S0+mj)|0;Hh=G;G=F;F=E;E=(D+t1)|0;D=C;C=B;B=A;A=(t1+t2)|0}
+    h=[(h[0]+A)|0,(h[1]+B)|0,(h[2]+C)|0,(h[3]+D)|0,(h[4]+E)|0,(h[5]+F)|0,(h[6]+G)|0,(h[7]+Hh)|0];
+  }
+  return h.map(x=>(x>>>0).toString(16).padStart(8,"0")).join("");
+}
+
+/* ====== Insight Points ====== */
+let booted=false,xp=0;const awarded={};
+const RANKS=[["Intern",0],["Analyst",40],["Manager",100],["Director",180],["Vice President",260],["CEO",330]];
+function rankFor(v){let r=RANKS[0];RANKS.forEach(x=>{if(v>=x[1])r=x});return r}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2200)}
+function boom(){if(typeof confetti==="function")confetti({particleCount:90,spread:70,origin:{y:.7},colors:["#E8B53D","#6A1B1A","#FFFBF0"]})}
+function award(key,pts,msg){
+  if(!booted||awarded[key])return;
+  awarded[key]=true;const before=rankFor(xp)[0];xp+=pts;$("xp").textContent=xp;
+  const r=rankFor(xp);$("rank").textContent=r[0];
+  const i=RANKS.findIndex(x=>x[0]===r[0]),next=RANKS[i+1];
+  $("xpbar").style.width=next?Math.min(100,((xp-r[1])/(next[1]-r[1]))*100)+"%":"100%";
+  if(r[0]!==before){toast("Promoted to "+r[0]+"! +"+pts);boom()}else toast((msg||"Nice")+" · +"+pts+" Insight Points");
+}
+
+/* map */
+document.querySelectorAll(".map .node").forEach(n=>n.addEventListener("click",()=>{const t=$(n.dataset.go);if(t)t.scrollIntoView({behavior:"smooth",block:"start"})}));
+
+/* ====== Block 1: centralised vs distributed ====== */
+(function(){
+  const svg=$("netsvg");
+  const L=[[120,40],[230,70],[240,190],[130,240],[30,180],[30,80]], cx=135,cy=140;
+  const R=[[600,40],[720,70],[760,170],[680,245],[570,220],[520,120]];
+  let s=`<text x="135" y="20" text-anchor="middle" font-family="Space Mono" font-size="12" font-weight="700" fill="#6A1B1A">CENTRALISED</text><text x="640" y="20" text-anchor="middle" font-family="Space Mono" font-size="12" font-weight="700" fill="#6A1B1A">DISTRIBUTED</text>`;
+  L.forEach((p,i)=>s+=`<line class="lline" x1="${cx}" y1="${cy}" x2="${p[0]}" y2="${p[1]}" stroke="#E8B53D" stroke-width="3"/>`);
+  for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++)s+=`<line class="rline" data-a="${i}" data-b="${j}" x1="${R[i][0]}" y1="${R[i][1]}" x2="${R[j][0]}" y2="${R[j][1]}" stroke="#E8B53D" stroke-width="2" opacity=".7"/>`;
+  L.forEach((p,i)=>s+=`<g class="lnode"><circle cx="${p[0]}" cy="${p[1]}" r="17" fill="#FFFBF0" stroke="#6A1B1A" stroke-width="3"/><text x="${p[0]}" y="${p[1]+5}" text-anchor="middle" font-size="15">👤</text></g>`);
+  s+=`<g id="cserver"><rect x="${cx-34}" y="${cy-30}" width="68" height="60" rx="10" fill="#6A1B1A"/><text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="Georgia" font-size="13" font-weight="700" fill="#E8B53D">BANK</text><text x="${cx}" y="${cy+14}" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#FFFBF0">master copy</text></g>`;
+  R.forEach((p,i)=>s+=`<g class="rnode" data-i="${i}"><circle cx="${p[0]}" cy="${p[1]}" r="22" fill="#6A1B1A"/><text x="${p[0]}" y="${p[1]+5}" text-anchor="middle" font-size="15">📒</text></g>`);
+  s+=`<text id="downL" x="135" y="272" text-anchor="middle" font-family="Inter" font-weight="800" font-size="14" fill="#B23A2E" opacity="0">SYSTEM DOWN · nobody can transact</text><text id="upR" x="640" y="272" text-anchor="middle" font-family="Inter" font-weight="800" font-size="14" fill="#2F7D4F" opacity="0">STILL RUNNING · 5 of 6 copies agree</text>`;
+  svg.innerHTML=s;
+  $("attackCentre").addEventListener("click",()=>{
+    $("cserver").querySelector("rect").setAttribute("fill","#B23A2E");
+    svg.querySelectorAll(".lline").forEach(l=>{l.setAttribute("stroke","#CFC6B8");l.setAttribute("stroke-dasharray","5 5")});
+    svg.querySelectorAll(".lnode circle").forEach(c=>c.setAttribute("stroke","#CFC6B8"));
+    const hit=svg.querySelector('.rnode[data-i="5"] circle');hit.setAttribute("fill","#B23A2E");
+    svg.querySelectorAll('.rline[data-a="5"],.rline[data-b="5"]').forEach(l=>{l.setAttribute("stroke","#CFC6B8");l.setAttribute("stroke-dasharray","5 5")});
+    $("downL").setAttribute("opacity","1");$("upR").setAttribute("opacity","1");
+    $("netcap").innerHTML="One attack took down the whole centralised system. In the distributed network, one copy was lost and <b>the other copies carried on</b>.";
+    award("attack",10,"Network tested");
+  });
+  $("resetNet").addEventListener("click",()=>{svg.innerHTML=s;$("netcap").textContent="Left: one bank keeps the only master copy. Right: every computer keeps a full copy."});
+})();
+
+/* ====== Block 2: hash machine ====== */
+let lastHash="";
+function renderHash(){
+  const h=sha256($("hashIn").value);let html="",n=0;
+  for(let i=0;i<64;i++){const c=lastHash&&lastHash[i]!==h[i];if(c)n++;html+=`<span${c?' class="ch"':""}>${h[i]}</span>`}
+  $("hashOut").innerHTML=html;
+  if(lastHash&&lastHash!==h){$("chgN").textContent=n+" / 64";$("chgBar").style.width=(n/64*100)+"%"}
+  lastHash=h;
+}
+$("hashIn").addEventListener("input",()=>{renderHash();award("hashtype",10,"First fingerprint")});
+document.querySelectorAll(".presets button").forEach(b=>b.addEventListener("click",()=>{$("hashIn").value=b.dataset.p;renderHash();award("preset-"+b.dataset.p,5,"Fingerprint compared")}));
+
+const HF=[
+  ["Same in, same out","The same text always produces exactly the same fingerprint, on any computer, anywhere.","That is how 6 nodes can compare notes without sharing every detail."],
+  ["Avalanche effect","Change one character and roughly half of the 64 characters change.","You cannot make a small, unnoticed edit."],
+  ["One-way street","You cannot work backwards from a fingerprint to the original text.","Like you cannot rebuild a person from their fingerprint."],
+  ["Fixed length","A word or a whole book: the SHA-256 fingerprint is always 64 characters.","Compact enough to store in every block."]
+];
+$("hashFlips").innerHTML=HF.map((f,i)=>`<div class="flip" data-flip="h${i}"><div class="flip-in"><div class="f"><b>${f[0]}</b><small>tap to flip</small></div><div class="b">${f[1]}<em>${f[2]}</em></div></div></div>`).join("");
+
+/* ====== Block 3: blockchain simulator ====== */
+const DIFF="000";
+const BLOCKS=[
+  {data:"Genesis block: Dinesh Sir's class ledger opens"},
+  {data:"Asha pays Ravi ₹500"},
+  {data:"Ravi pays Meena ₹200\nMeena pays Kiran ₹150"},
+  {data:"Kiran pays Asha ₹300"}
+];
+let totalGuesses=0;
+function bHash(i,b){return sha256(i+"|"+b.prev+"|"+b.data+"|"+b.nonce)}
+function mine(i){
+  const b=BLOCKS[i];let n=0;
+  do{n++;b.nonce=n;b.hash=bHash(i,b)}while(!b.hash.startsWith(DIFF)&&n<2000000);
+  return n;
+}
+function relink(from){
+  for(let i=from;i<BLOCKS.length;i++){
+    BLOCKS[i].prev=i===0?"0".repeat(64):BLOCKS[i-1].hash;
+    BLOCKS[i].hash=bHash(i,BLOCKS[i]);
+  }
+}
+(function init(){for(let i=0;i<BLOCKS.length;i++){BLOCKS[i].prev=i===0?"0".repeat(64):BLOCKS[i-1].hash;mine(i)}})();
+const short=h=>`<b>${h.slice(0,3)}</b>${h.slice(3,18)}...${h.slice(-6)}`;
+function valid(i){const b=BLOCKS[i];return b.hash.startsWith(DIFF)&&b.prev===(i===0?"0".repeat(64):BLOCKS[i-1].hash)}
+function drawSim(){
+  $("chainsim").innerHTML=BLOCKS.map((b,i)=>`<div class="bk${valid(i)?"":" bad"}" id="bk${i}">
+    <h4>Block ${i+1}<span class="st">${valid(i)?"VALID":"BROKEN"}</span></h4>
+    <label for="bd${i}">Transactions</label><textarea id="bd${i}" data-i="${i}">${b.data}</textarea>
+    <label>Previous block's fingerprint</label><div class="hx">${short(b.prev)}</div>
+    <label>Nonce</label><div class="nonce" id="nc${i}">${b.nonce.toLocaleString("en-IN")}</div>
+    <label>This block's fingerprint</label><div class="hx own" id="hh${i}">${short(b.hash)}</div>
+    <button class="btn ${valid(i)?"btn-o":"btn-m"}" data-mine="${i}">⛏ Mine</button></div>`).join("");
+  updateStatus();
+}
+function refreshCards(){
+  BLOCKS.forEach((b,i)=>{
+    const el=$("bk"+i),ok=valid(i);
+    el.classList.toggle("bad",!ok);el.querySelector(".st").textContent=ok?"VALID":"BROKEN";
+    el.querySelectorAll(".hx")[0].innerHTML=short(b.prev);$("hh"+i).innerHTML=short(b.hash);$("nc"+i).textContent=b.nonce.toLocaleString("en-IN");
+    const btn=el.querySelector("[data-mine]");btn.className="btn "+(ok?"btn-o":"btn-m");
+  });
+  updateStatus();
+}
+let wasBroken=false;
+function updateStatus(){
+  const broken=BLOCKS.filter((b,i)=>!valid(i)).length;$("brokenN").textContent=broken;$("guesses").textContent=totalGuesses.toLocaleString("en-IN");
+  const m=$("simMsg");
+  if(broken){wasBroken=true;m.className="msg bad";m.textContent=`${broken} block${broken>1?"s are":" is"} broken. Changing one block changed its fingerprint, which broke the link to every block after it. Press Mine on each red block, from left to right.`}
+  else if(wasBroken){m.className="msg good";m.textContent=`Chain repaired with ${totalGuesses.toLocaleString("en-IN")} guesses. On your laptop that took seconds. Now imagine 900,000 blocks, each a trillion times harder, while the rest of the world keeps adding new ones.`}
+  else{m.className="msg";m.textContent="All four blocks are valid. Every fingerprint starts with 000 and every block points correctly to the one before it."}
+}
+$("chainsim").addEventListener("input",e=>{
+  const t=e.target.closest("textarea[data-i]");if(!t)return;
+  const i=+t.dataset.i;BLOCKS[i].data=t.value;relink(i);refreshCards();
+  award("tamper",15,"You broke the chain");
+});
+$("chainsim").addEventListener("click",e=>{
+  const b=e.target.closest("[data-mine]");if(!b)return;
+  const i=+b.dataset.mine;
+  b.disabled=true;b.textContent="⛏ Mining...";
+  setTimeout(()=>{
+    const wasValid=valid(i);
+    const n=mine(i);totalGuesses+=n;relink(i+1);refreshCards();
+    const el=$("bk"+i);el.classList.remove("mined");void el.offsetWidth;el.classList.add("mined");
+    b.disabled=false;b.textContent="⛏ Mine";
+    if(!wasValid)toast(`Block ${i+1} mined in ${n.toLocaleString("en-IN")} guesses`);
+    if(BLOCKS.every((x,j)=>valid(j))&&wasBroken){award("repair",25,"Chain repaired");boom()}
+  },60);
+});
+
+/* ====== Block 4: network vote ====== */
+const CITIES=["Mumbai","Bengaluru","Delhi","Chennai","Kolkata"];
+const HONEST=["Asha pays Ravi ₹20","Ravi pays Meena ₹15","Meena pays Kiran ₹30"];
+const FAKE=["Asha pays Ravi ₹20","Ravi pays Meena ₹85","Meena pays Kiran ₹30"];
+const FP_H=sha256(HONEST.join("|")).slice(0,10),FP_F=sha256(FAKE.join("|")).slice(0,10);
+function drawNet(){
+  const a=+$("atk").value;$("atkV").textContent=a+" of 5";
+  $("net").innerHTML=CITIES.map((c,i)=>{const evil=i>=5-a,L=evil?FAKE:HONEST;
+    return `<div class="nd${evil?" evil":""}" id="nd${i}"><h5><i></i>${c}</h5><ul>${L.map((t,j)=>`<li${evil&&j===1?' class="tamp"':""}>${t}</li>`).join("")}</ul><div class="fp">fingerprint ${evil?FP_F:FP_H}</div></div>`}).join("");
+  $("voteMsg").className="msg";$("voteMsg").textContent="Set the attacker's strength, then run the vote.";
+}
+$("atk").addEventListener("input",()=>{drawNet();award("atk",5,"Attacker set")});
+$("vote").addEventListener("click",()=>{
+  const a=+$("atk").value,honestWins=(5-a)>a;
+  CITIES.forEach((c,i)=>{const evil=i>=5-a,el=$("nd"+i);el.classList.remove("win","lose");
+    setTimeout(()=>el.classList.add((evil?!honestWins:honestWins)?"win":"lose"),i*180)});
+  setTimeout(()=>{
+    const m=$("voteMsg");
+    if(a===0){m.className="msg good";m.textContent="No attacker. All five copies match, so the ledger is confirmed instantly."}
+    else if(honestWins){m.className="msg good";m.textContent=`Honest nodes win ${5-a} to ${a}. The tampered ${a>1?"copies are":"copy is"} rejected and replaced with the honest version. The cheat fails.`}
+    else{m.className="msg bad";m.textContent=`The attacker wins ${a} to ${5-a}. With a majority, the fake ₹85 becomes "the truth", and the honest nodes are overruled. This is a 51% attack. On a real network with thousands of nodes, controlling a majority would cost an enormous amount, which is the real protection.`}
+    award("vote"+(honestWins?"h":"e"),10,honestWins?"Cheat rejected":"51% attack seen");
+  },5*180+200);
+});
+
+/* sorter */
+const SORT=[
+  ["Anyone in the world can send and verify Bitcoin transactions without permission.",0,"Public: open to all, owned by no one."],
+  ["Five Indian banks jointly run nodes to share letters of credit with each other.",2,"Permissioned: a known group of organisations runs it together."],
+  ["A single company tracks its own warehouse stock on a blockchain only its staff can access.",1,"Private: one organisation controls who joins."],
+  ["Anyone can deploy a smart contract on Ethereum and read every transaction.",0,"Public: open network, anyone can read and validate."],
+  ["Shipping lines, ports and customs agree to share container records on one network.",2,"Permissioned: many known parties, controlled membership."],
+  ["A hospital keeps an internal record of drug inventory on a chain run only by its IT team.",1,"Private: a single owner runs every node."]
+];
+let sIdx=0,sScore=0;
+function showSort(){if(sIdx>=SORT.length){$("sortQ").textContent=`Done! You got ${sScore} of ${SORT.length}.`;document.querySelectorAll(".sortbtns .btn").forEach(b=>b.disabled=true);if(sScore>=5)boom();return}$("sortQ").textContent=SORT[sIdx][0]}
+document.querySelectorAll(".sortbtns .btn").forEach(b=>b.addEventListener("click",()=>{
+  if(sIdx>=SORT.length)return;
+  const ok=+b.dataset.s===SORT[sIdx][1];
+  $("sortFb").innerHTML=(ok?'<b style="color:var(--green)">Correct.</b> ':'<b style="color:var(--red)">Not quite.</b> ')+SORT[sIdx][2];
+  if(ok){sScore++;award("sort"+sIdx,5,"Sorted")}
+  sIdx++;setTimeout(showSort,900);
+}));
+
+/* ====== Block 5: halving ====== */
+(function(){
+  const H=[["2009",50],["2012",25],["2016",12.5],["2020",6.25],["2024",3.125]];
+  $("halving").innerHTML=H.map(h=>`<div class="hv"><div class="v">${h[1]}</div><div class="bar" data-h="${h[1]/50*170}"></div><div class="y">${h[0]}</div></div>`).join("");
+  const run=()=>document.querySelectorAll("#halving .bar").forEach((b,i)=>setTimeout(()=>b.style.height=b.dataset.h+"px",i*350));
+  onView($("halvScene"),run,.4);
+})();
+
+/* copy buttons */
+document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>{
+  const t=$(b.dataset.copy).textContent;
+  const ok=()=>{toast("Copied. Paste it into YouTube.");award("copy-"+b.dataset.copy,5,"Ready to watch")};
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(ok).catch(()=>toast("Select the text and copy it"));else toast("Select the text and copy it");
+}));
+
+/* trust profile */
+const LK=[
+  ["I would trust my bank more than any app with my savings.","bank"],
+  ["Rules written in code are fairer than rules enforced by people.","code"],
+  ["I would happily use a blockchain if the RBI regulated it.","hybrid"],
+  ["Most crypto is hype that will disappear.","sceptic"],
+  ["If a bank freezes my account, I should have an alternative.","code"],
+  ["New financial technology should be tested by regulators before the public uses it.","hybrid"],
+  ["Banks have earned their trust over decades.","bank"],
+  ["I do not trust either banks or blockchains fully.","sceptic"]
+];
+const lkv={};
+$("likert").innerHTML=LK.map((l,i)=>`<div class="lk"><span>${l[0]}</span><div class="opts">${[1,2,3,4,5].map(v=>`<button data-l="${i}" data-v="${v}">${v}</button>`).join("")}</div></div>`).join("");
+$("likert").addEventListener("click",e=>{const b=e.target.closest("button[data-l]");if(!b)return;const i=b.dataset.l;lkv[i]=+b.dataset.v;b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+const PROF={bank:["The Bank Loyalist","You value institutions with a track record. You see regulation and accountability as the real source of safety. Your challenge: remember that 2008 happened inside trusted institutions."],
+  code:["The Code Believer","You trust rules that nobody can bend. Transparency and freedom from gatekeepers matter to you. Your challenge: code can have bugs, and nobody can be taken to court."],
+  hybrid:["The Hybrid Realist","You want the efficiency of new technology with the protection of regulation. This is roughly where the RBI's e-rupee sits. Your challenge: can you have both control and decentralisation?"],
+  sceptic:["The Healthy Sceptic","You do not hand over trust easily, to anyone. That makes you hard to fool. Your challenge: scepticism is a starting point, not a conclusion. Test, then decide."]};
+$("trustBtn").addEventListener("click",()=>{
+  if(Object.keys(lkv).length<LK.length){toast("Rate all eight statements first");return}
+  const sc={bank:0,code:0,hybrid:0,sceptic:0};LK.forEach((l,i)=>sc[l[1]]+=lkv[i]);
+  const top=Object.keys(sc).sort((a,b)=>sc[b]-sc[a])[0],P=PROF[top];
+  $("trustReport").innerHTML=`<div class="kicker">Your trust profile</div><div class="lens">${P[0]}</div><p>${P[1]}</p>`+Object.keys(sc).map(k=>`<div class="rbar"><div class="rl"><span>${PROF[k][0]}</span><span>${sc[k]} / 10</span></div><div class="rt"><i data-w="${sc[k]*10}"></i></div></div>`).join("");
+  $("trustReport").classList.add("show");
+  setTimeout(()=>document.querySelectorAll("#trustReport .rt i").forEach(i=>i.style.width=i.dataset.w+"%"),60);
+  award("trust",20,"Profile generated");
+});
+
+/* glossary */
+const G=[["Ledger","A record of transactions.","Your passbook is one."],["Node","A computer that keeps a full copy of the ledger.","More nodes, harder to cheat."],["DLT","Distributed Ledger Technology: one ledger, many synchronised copies.","Blockchain is one type."],["Block","A bundle of transactions plus the previous block's fingerprint.","Like one page of the notebook."],["Hash","A fixed-length digital fingerprint of any data.","SHA-256 gives 64 characters."],["Nonce","The number miners keep changing to find a valid hash.","\"Number used once\"."],["Mining","Guessing nonces until the hash meets the target.","Proof of Work."],["Consensus","The rules nodes use to agree on one version of truth.","PoW and PoS are two types."],["51% attack","When one party controls most of the network and can rewrite the truth.","The weakness of majority rule."],["Halving","Bitcoin's block reward cut in half roughly every four years.","Total supply capped at 21 million."]];
+$("gloss").innerHTML=G.map((g,i)=>`<div class="flip" data-flip="g${i}"><div class="flip-in"><div class="f"><b>${g[0]}</b><small>tap to flip</small></div><div class="b">${g[1]}<em>${g[2]}</em></div></div></div>`).join("");
+document.addEventListener("click",e=>{const f=e.target.closest(".flip");if(!f)return;f.classList.toggle("on");award("flip-"+f.dataset.flip,3,"Card flipped")});
+
+/* quiz */
+const Q=[
+  ["What is a distributed ledger?",["A ledger kept by the RBI only","A ledger copied across many computers that agree on every update","A ledger stored in the cloud by one company","A paper ledger with many pages"],1,"Distributed means many identical copies, kept in sync by shared rules, with no single master keeper."],
+  ["What happens to a SHA-256 hash if you change one character of the input?",["Nothing","Only the last character changes","Roughly half of the hash changes","The hash becomes shorter"],2,"This is the avalanche effect. A tiny edit produces a completely different fingerprint."],
+  ["Why does changing an old block break every block after it?",["Each block stores the previous block's fingerprint","Blocks are sorted by date","The RBI checks every block","Miners delete the old block"],0,"Change a block and its fingerprint changes, so the next block's stored 'previous fingerprint' no longer matches, and so on down the chain."],
+  ["In the simulator, what did 'mining' a block mean?",["Deleting a block","Guessing nonces until the hash started with 000","Copying a block to another node","Adding a new transaction"],1,"Mining is repeated guessing of the nonce until the fingerprint meets the target. This is Proof of Work."],
+  ["A network has 5 nodes. An attacker controls 2. What happens to the tampered record?",["It becomes the truth","The network shuts down","It is outvoted and rejected","All 5 nodes are deleted"],2,"The honest majority of 3 wins the consensus vote. The attacker needs more than half the network."],
+  ["Ethereum moved from Proof of Work to which mechanism in 2022?",["Proof of Stake","Proof of Authority","Proof of Identity","Proof of Burn"],0,"In 'The Merge' of September 2022, Ethereum switched to Proof of Stake, where validators lock up coins as a deposit."],
+  ["Several banks jointly run a blockchain for trade documents. This is a:",["Public blockchain","Private blockchain","Permissioned or consortium blockchain","Centralised database"],2,"A known group of organisations running the nodes together is a permissioned or consortium blockchain."],
+  ["How are new bitcoins created?",["Printed by central banks","Paid to miners as a block reward","Bought from exchanges","Created by the Bitcoin Foundation"],1,"The protocol issues new bitcoin to the miner who adds each block. The reward halves roughly every four years."]
+];
+let qs=0;
+$("quiz").innerHTML=Q.map((q,i)=>`<div class="q" id="q${i}"><p>${i+1}. ${q[0]}</p><div class="opts">${q[1].map((o,j)=>`<button data-q="${i}" data-o="${j}">${o}</button>`).join("")}</div><div class="why">${q[3]}</div></div>`).join("");
+$("quiz").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-q]");if(!b)return;
+  const i=+b.dataset.q,box=$("q"+i);if(box.classList.contains("done"))return;
+  box.classList.add("done");const ok=+b.dataset.o===Q[i][2];
+  box.querySelectorAll("button").forEach((x,j)=>{if(j===Q[i][2])x.classList.add("right")});
+  if(!ok)b.classList.add("wrong");
+  if(ok){qs++;award("q"+i,15,"Correct")}else toast("Not quite. Read why.");
+  $("qscore").textContent=`Score: ${qs} / 8`;
+  if(document.querySelectorAll(".q.done").length===Q.length&&qs>=6)boom();
+});
+
+/* Blind Spot roles */
+const ROLES=[
+  ["The Small Farmer","Village in Karnataka","You own 2 acres. Your grandfather's land papers are faded, and a relative now claims part of the land.","A clear, unchangeable title, and a crop loan"],
+  ["The Sub-Registrar's Office","Taluk office","You register sales and transfers today. Records are paper and partly digitised. Staff are overloaded.","Fewer disputes, but your office's role may shrink"],
+  ["The Bank Loan Officer","Rural bank branch","You hesitate to lend against land because titles are hard to verify and fraud is common.","Faster, safer loans against verified land"],
+  ["The Land Broker","Local market town","You earn by helping people 'manage' paperwork and find buyers. Some of your work depends on unclear records.","Your income depends on things staying complicated"],
+  ["The Proptech Founder","Bengaluru startup","You want to build the land-record blockchain and sell it to state governments.","A large government contract"],
+  ["The State Revenue Secretary","State government","Land is a state subject. You must decide whether to fund this project and who runs the nodes.","Fewer court cases, better revenue, political credit"],
+  ["The Digital Rights Activist","Civil society group","You worry that permanent public records could expose owners' personal data or lock in old injustices.","Privacy, and the right to correct errors"]
+];
+$("roles").innerHTML=ROLES.map((r,i)=>`<div class="role" id="role${i}"><div class="rn">ROLE ${i+1} · ${r[1]}</div><h4>${r[0]}</h4><p>${r[2]}</p><div class="inc"><b>Your stake:</b> ${r[3]}</div></div>`).join("");
+$("draw").addEventListener("click",()=>{
+  const btn=$("draw");btn.disabled=true;$("drawResult").textContent="Drawing...";
+  document.querySelectorAll(".role").forEach(r=>{r.classList.add("in");r.classList.remove("pick")});
+  let n=0,cur=-1;
+  const iv=setInterval(()=>{
+    let nx;do{nx=Math.floor(Math.random()*ROLES.length)}while(nx===cur);
+    if(cur>=0)$("role"+cur).classList.remove("pick");cur=nx;$("role"+cur).classList.add("pick");
+    if(++n>=14){clearInterval(iv);$("drawResult").textContent="Your group plays: "+ROLES[cur][0]+" (Role "+(cur+1)+")";btn.disabled=false;btn.textContent="Draw again";toast("Your group plays: "+ROLES[cur][0]);award("draw",10,"Role drawn");boom()}
+  },110);
+});
+
+/* timer */
+const T0=900;let tLeft=T0,tRun=null;
+function tShow(){$("clock").textContent=String(Math.floor(tLeft/60)).padStart(2,"0")+":"+String(tLeft%60).padStart(2,"0")}
+$("tStart").addEventListener("click",()=>{
+  if(tRun){clearInterval(tRun);tRun=null;$("tStart").textContent="Resume";return}
+  award("timer",10,"Clock is running");$("tStart").textContent="Pause";
+  tRun=setInterval(()=>{tLeft--;tShow();if(tLeft<=0){clearInterval(tRun);tRun=null;$("tStart").textContent="Start timer";toast("Time! Spokespersons, get ready.");boom()}},1000);
+});
+$("tReset").addEventListener("click",()=>{clearInterval(tRun);tRun=null;tLeft=T0;tShow();$("tStart").textContent="Start timer"});
+
+/* submit */
+$("copyDraft").addEventListener("click",()=>{
+  const t=$("draft").value.trim();if(!t){toast("Type your answers first");return}
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Copied. Paste it into the form.")).catch(()=>{$("draft").select();toast("Select all and copy manually")});
+});
+$("submitBtn").addEventListener("click",()=>{
+  if(!SUBMIT_URL||SUBMIT_URL.indexOf("PASTE_")===0){toast("Your teacher will share the submission link.");return}
+  window.open(SUBMIT_URL,"_blank","noopener");award("submit",15,"Submitted");
+});
+
+/* checklist */
+const CK=["the difference between a centralised and a distributed ledger","what a hash is and why one small change alters it completely","why changing an old block breaks the whole chain","what mining and Proof of Work mean","how consensus stops a cheater, and what a 51% attack is","how a cryptocurrency like bitcoin is created"];
+$("checks").innerHTML=CK.map((c,i)=>`<label class="check"><input type="checkbox" data-c="${i}"><span>I can explain ${c}.</span></label>`).join("");
+$("checks").addEventListener("change",e=>{
+  const c=e.target.closest("input[data-c]");if(!c||!c.checked)return;award("ck"+c.dataset.c,5,"Understood");
+  if(document.querySelectorAll("#checks input:checked").length===CK.length){toast("Read 02 complete. See you in the next class!");boom()}
+});
+
+/* ====== helpers: onView ====== */
+function onView(el,fn,th){
+  if(!el)return;
+  if(!("IntersectionObserver" in window)){fn();return}
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){fn();io.disconnect()}}),{threshold:th||.35});
+  io.observe(el);
+}
+
+/* ====== Viewport tracking: works standalone and inside a tall Google Sites iframe ====== */
+const EMBED=window.self!==window.top,SITES_BAR=64;let visTop=0,visBot=window.innerHeight;
+function placeFloaters(){
+  const H=document.documentElement.scrollHeight;
+  if(EMBED){
+    $("progress").style.top=(visTop+SITES_BAR)+"px";
+    document.querySelector(".hud").style.top=(visTop+SITES_BAR+12)+"px";
+    $("toast").style.top=Math.max(visTop+SITES_BAR+70,visBot-80)+"px";
+    $("progress").style.width=Math.min(100,visBot/H*100)+"%";
+  }else{
+    const h=H-window.innerHeight;$("progress").style.width=(h>0?window.scrollY/h*100:0)+"%";
+  }
+}
+if(EMBED&&"IntersectionObserver" in window){
+  document.documentElement.classList.add("emb");
+  const holder=document.createElement("div");holder.setAttribute("aria-hidden","true");
+  holder.style.cssText="position:absolute;left:0;top:0;width:1px;pointer-events:none";document.body.appendChild(holder);
+  const STEP=100,state=new Map(),th=[];for(let i=0;i<=20;i++)th.push(i/20);
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{const y=+e.target.dataset.y;
+      if(e.isIntersecting&&e.intersectionRect.height>0){const off=e.intersectionRect.top-e.boundingClientRect.top;state.set(y,[y+off,y+off+e.intersectionRect.height])}else state.delete(y)});
+    if(state.size){let a=Infinity,b=-Infinity;state.forEach(v=>{a=Math.min(a,v[0]);b=Math.max(b,v[1])});visTop=a;visBot=b;placeFloaters()}
+  },{threshold:th});
+  function build(){io.disconnect();state.clear();holder.innerHTML="";const H=document.documentElement.scrollHeight;
+    for(let y=0;y<H;y+=STEP){const s=document.createElement("div");s.dataset.y=y;s.style.cssText=`position:absolute;left:0;top:${y}px;width:1px;height:${Math.min(STEP,H-y)}px`;holder.appendChild(s);io.observe(s)}}
+  build();let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(build,300)});setTimeout(build,2500);
+}else window.addEventListener("scroll",placeFloaters,{passive:true});
+
+/* ====== Scroll reveals ====== */
+if("IntersectionObserver" in window){
+  const GRP=".grid2,.grid3,.flips,.roles,.net";
+  const singles=[...document.querySelectorAll(".map,.block-head,.story p,.card,.widget,.scene,.callout,.think,.rule,.blindspot")].filter(el=>!(el.parentElement&&el.parentElement.closest(".card,.widget,.scene,.blindspot,"+GRP)));
+  const groups=[...document.querySelectorAll(GRP)].filter(g=>!g.closest(".widget,.blindspot"));
+  const nums=[...document.querySelectorAll(".num")];
+  singles.forEach(el=>el.classList.add("rv"));
+  groups.forEach(g=>[...g.children].forEach((c,i)=>{c.classList.add("rv","rv-s");c.style.transitionDelay=(i*.08)+"s"}));
+  nums.forEach(el=>el.classList.add("rv-num"));
+  const rio=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const t=e.target,kids=t.matches(GRP)?[...t.children]:[t];
+    kids.forEach(k=>{k.classList.add("in");setTimeout(()=>{k.style.transitionDelay=""},1500)});rio.unobserve(t)}),{threshold:.08});
+  singles.concat(groups,nums).forEach(el=>rio.observe(el));
+}
+
+/* iOS touch-scroll driver for embeds */
+(function(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(!isIOS||window.self===window.top)return;let y0=0;
+  document.addEventListener("touchstart",e=>{y0=e.touches[0].clientY},{passive:true});
+  document.addEventListener("touchmove",e=>{if(e.target.closest("input[type=range],textarea,input"))return;const y=e.touches[0].clientY;window.scrollBy(0,y0-y);y0=y},{passive:true});
+})();
+
+/* initial renders, no points */
+renderHash();drawSim();drawNet();showSort();tShow();placeFloaters();
+booted=true;
+</script>
+</body>
+</html>
